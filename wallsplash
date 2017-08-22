@@ -1,0 +1,118 @@
+#!/bin/bash
+
+VERSION="0.1"
+
+usage() {
+    echo "Usage: `basename $0` [OPTIONS]
+
+Options:
+    * wallpaper type:
+        -r,--random
+        -a,--daily
+        -e,--weekly
+        -f,--featured
+    * colorscheme options:
+        -c,--colors     Set colorscheme with wal
+    * file options:
+        -s,--symlink    Create symlink to wallpaper
+                        in /home/<USER>/.current_wallpaper
+
+Example:
+    wallsplash --featured -cs"
+}
+
+version() {
+	echo "`basename $0` v${VERSION}"
+}
+
+
+DIR="/home/${USER}/.wallsplash"
+SYMLINK_PATH="/home/${USER}/.current_wallpaper"
+
+getopt --test > /dev/null
+if [[ $? -ne 4 ]]; then
+    echo "I’m sorry, `getopt --test` failed in this environment."
+    exit 1
+fi
+
+OPTIONS=:raefcsvh
+LONGOPTIONS=random,daily,weekly,featured,colors,symlink,version,help
+
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
+if [[ $? -ne 0 ]]; then
+    exit 2
+fi
+eval set -- "$PARSED"
+
+while [[ $# -gt 1 ]]; do
+    case "$1" in
+        -r|--random)
+            TYPE="random"
+            OPT="-r"
+            shift
+            ;;
+        -a|--daily)
+            TYPE="daily"
+            OPT="-a"
+            shift
+            ;;
+        -e|--weekly)
+            TYPE="weekly"
+            OPT="-e"
+            shift
+            ;;
+        -f|--featured)
+            TYPE="featured"
+            OPT="-f"
+            shift
+            ;;
+        -c|--colors)
+            SET_COMMAND="wal -i"
+            shift
+            ;;
+        -s|--symlink)
+            SYMLINK=y
+            shift
+            ;;
+		-v|--version)
+			version
+			exit 0
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+    esac
+done
+
+if [ -z "${OPT}" ]; then
+    usage
+    exit 1
+fi
+
+if [ -z "${SET_COMMAND}" ]; then
+    SET_COMMAND="feh --bg-scale"
+fi
+
+# Clean dir
+echo "Cleaning directory..."
+rm -rf ${DIR}
+mkdir ${DIR}
+cd ${DIR}
+
+# Get wallpaper
+echo "Getting ${TYPE} wallpaper..."
+unsplash-wallpaper -d ${DIR} ${OPT} &> /dev/null
+
+# Set it
+WP_PATH=`find ${DIR} -name "wallpaper*"`
+echo "Setting it with `echo ${SET_COMMAND} | awk '{print $1}'`..."
+wal -t -i ${WP_PATH} &> /dev/null
+
+# Symlink
+if [ ${SYMLINK} ]; then
+    echo "Creating symlink in ${SYMLINK_PATH}..."
+    ln -sf ${WP_PATH} ${SYMLINK_PATH}
+fi
+
+echo "Enjoy!"
