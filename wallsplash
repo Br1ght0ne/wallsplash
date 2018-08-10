@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-VERSION="0.2"
+VERSION="0.3"
 
 usage() {
     echo "Usage: `basename $0` [OPTIONS]
@@ -27,6 +27,8 @@ Options:
         -a,--daily
         -e,--weekly
         -f,--featured
+    * wallpaper options:
+        -q,--search     Get a photo from a search query
     * colorscheme options:
         -c,--colors     Set colorscheme with wal
     * file options:
@@ -51,8 +53,8 @@ if [[ $? -ne 4 ]]; then
     exit 1
 fi
 
-OPTIONS=:raefcsvh
-LONGOPTIONS=random,daily,weekly,featured,colors,symlink,version,help
+OPTIONS=:raefcsvhq:
+LONGOPTIONS=random,daily,weekly,featured,colors,symlink,version,help,search:
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
@@ -90,6 +92,10 @@ while [[ $# -gt 1 ]]; do
             SYMLINK=y
             shift
             ;;
+        -q|--search)
+            SEARCH="-q $2"
+            shift 2
+            ;;
 		-v|--version)
 			version
 			exit 0
@@ -119,7 +125,7 @@ cd ${DIR}
 
 # Get wallpaper
 echo "Getting ${TYPE} wallpaper..."
-unsplash-wallpaper -d ${DIR} ${OPT} &> /dev/null
+unsplash-wallpaper -d ${DIR} ${OPT} ${SEARCH} &> /dev/null
 
 # Set it
 WP_PATH=`ls -t ${DIR}/wallpaper* | head -n 1`
